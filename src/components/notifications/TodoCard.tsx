@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { Shield, Key, FileText } from 'lucide-react';
+import { Shield, Key, FileText, Link2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from './StatusBadge';
 import { CryptoIconWithChain } from '@/components/CryptoIconWithChain';
-import type { TodoItem, ExcessApprovalMeta, TssSigningMeta, PactApprovalMeta, StatusVariant } from '@/types/notification';
+import type { TodoItem, ExcessApprovalMeta, TssSigningMeta, PactApprovalMeta, WcSignMeta, StatusVariant } from '@/types/notification';
 import type { ChainId } from '@/types/wallet';
 
 interface TodoCardProps {
@@ -15,6 +15,7 @@ const txTypeTagLabels: Record<string, string> = {
   transfer: '转账',
   contract_interaction: '合约交易',
   message_signing: '消息签名',
+  switch_chain: '切换网络',
 };
 
 // ── Format amount ──
@@ -27,10 +28,10 @@ function formatAmount(amount: number, symbol: string): string {
 
 // ── Status badge per type ──
 function getStatusBadge(item: TodoItem): { label: string; variant: StatusVariant } {
-  if (item.type === 'tss_signing') {
+  if (item.type === 'tss_signing' || item.type === 'wc_sign') {
     if (item.status === 'pending') return { label: '待签名', variant: 'warning' };
     if (item.status === 'approved') return { label: '已签名', variant: 'success' };
-    if (item.status === 'failed') return { label: '签名失败', variant: 'error' };
+    if (item.status === 'failed') return { label: '已超时', variant: 'error' };
     return { label: '已拒绝', variant: 'error' };
   }
   if (item.status === 'pending') return { label: '待审批', variant: 'warning' };
@@ -59,6 +60,19 @@ function deriveFields(item: TodoItem) {
       title: 'Pact 创建',
       tag: m.txType ? (txTypeTagLabels[m.txType] || m.txType) : null,
       subtitle: m.intent,
+      amount: null,
+    };
+  }
+
+  if (meta.type === 'wc_sign') {
+    const m = meta as WcSignMeta;
+    const subtitle = m.contractName
+      ? `${m.dappName} · ${m.contractName}`
+      : `${m.dappName} · ${m.addressShort}`;
+    return {
+      title: '交易签名',
+      tag: txTypeTagLabels[m.txType] || m.txType,
+      subtitle,
       amount: null,
     };
   }
@@ -100,6 +114,24 @@ export function TodoCard({ item }: TodoCardProps) {
       return (
         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
           <Key className="w-5 h-5 text-primary" strokeWidth={1.5} />
+        </div>
+      );
+    }
+    if (meta.type === 'wc_sign') {
+      const m = meta as WcSignMeta;
+      return (
+        <div className="relative">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <Link2 className="w-5 h-5 text-primary" strokeWidth={1.5} />
+          </div>
+          {/* dApp emoji badge — bottom-right overlay */}
+          <span
+            aria-hidden
+            className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-card border-2 border-card flex items-center justify-center text-[12px] leading-none shadow-sm"
+            style={{ backgroundColor: 'hsl(var(--card))' }}
+          >
+            {m.dappIcon}
+          </span>
         </div>
       );
     }

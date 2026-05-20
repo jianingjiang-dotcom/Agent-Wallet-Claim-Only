@@ -50,7 +50,7 @@ export interface Message {
 // 待办（Todos）
 // ============================
 
-export type TodoType = 'pact_approval' | 'excess_approval' | 'tss_signing';
+export type TodoType = 'pact_approval' | 'excess_approval' | 'tss_signing' | 'wc_sign';
 export type TodoStatus = 'pending' | 'approved' | 'rejected' | 'failed';
 
 export interface PactApprovalMeta {
@@ -98,7 +98,28 @@ export interface TssSigningMeta {
   eip712?: EIP712Data;
 }
 
-export type TodoMetadata = PactApprovalMeta | ExcessApprovalMeta | TssSigningMeta;
+/** dApp sign request surfaced into the Todo center (origin: WalletConnect). */
+export interface WcSignMeta {
+  type: 'wc_sign';
+  requestId: string;
+  method:
+    | 'eth_sendTransaction'
+    | 'personal_sign'
+    | 'eth_sign'
+    | 'eth_signTypedData_v4'
+    | 'wallet_switchEthereumChain';
+  /** Human-friendly subtype tag for the card row. */
+  txType: 'transfer' | 'contract_interaction' | 'message_signing' | 'switch_chain';
+  dappName: string;
+  dappIcon: string;
+  walletName: string;
+  /** Short address (e.g. 0xab12…cd34) */
+  addressShort: string;
+  /** Optional contract / target shown as the secondary line. */
+  contractName?: string;
+}
+
+export type TodoMetadata = PactApprovalMeta | ExcessApprovalMeta | TssSigningMeta | WcSignMeta;
 
 export interface TodoItem {
   id: string;

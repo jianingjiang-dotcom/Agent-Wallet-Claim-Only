@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigationType } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { WalletProvider, useWallet } from "@/contexts/WalletContext";
+import { WalletConnectProvider } from "@/contexts/WalletConnectContext";
+import { WalletConnectGlobal } from "@/components/WalletConnectGlobal";
 import { AppLockProvider } from "@/contexts/AppLockContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -30,6 +32,9 @@ import PersonalInfo from "./pages/PersonalInfo";
 import EditProfile from "./pages/EditProfile";
 import EditNickname from "./pages/EditNickname";
 import Contacts from "./pages/Contacts";
+import ConnectedDapps from "./pages/ConnectedDapps";
+import SessionDetail from "./pages/SessionDetail";
+import WcSignRequest from "./pages/WcSignRequest";
 import ContactForm from "./pages/ContactForm";
 import ContactDetail from "./pages/ContactDetail";
 import AssetDetail from "./pages/AssetDetail";
@@ -182,6 +187,9 @@ function AppRoutes() {
       <Route path="/profile/contacts/add" element={<ProtectedRoute><ContactForm /></ProtectedRoute>} />
       <Route path="/profile/contacts/edit/:id" element={<ProtectedRoute><ContactForm /></ProtectedRoute>} />
       <Route path="/profile/contacts/:id" element={<ProtectedRoute><ContactDetail /></ProtectedRoute>} />
+      <Route path="/connected-dapps" element={<ProtectedRoute bypassAuth><ConnectedDapps /></ProtectedRoute>} />
+      <Route path="/connected-dapps/:id" element={<ProtectedRoute bypassAuth><SessionDetail /></ProtectedRoute>} />
+      <Route path="/wc-sign/:id" element={<ProtectedRoute bypassAuth><WcSignRequest /></ProtectedRoute>} />
       <Route path="/profile/*" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/agent-management" element={<ProtectedRoute bypassAuth><DelegateAgent /></ProtectedRoute>} />
       <Route path="/agent-management/:id" element={<ProtectedRoute><AgentDetail /></ProtectedRoute>} />
@@ -235,18 +243,21 @@ const App = () => (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <LanguageProvider>
         <WalletProvider>
-          <AppLockProvider>
-            <TooltipProvider>
-              <BrowserRouter>
-                <PhoneFrame>
-                  <InAppNotificationOverlay />
-                  <Toaster />
-                  <AppLockScreen />
-                  <AppRoutes />
-                </PhoneFrame>
-              </BrowserRouter>
-            </TooltipProvider>
-          </AppLockProvider>
+          <WalletConnectProvider>
+            <AppLockProvider>
+              <TooltipProvider>
+                <BrowserRouter>
+                  <PhoneFrame>
+                    <InAppNotificationOverlay />
+                    <Toaster />
+                    <AppLockScreen />
+                    <AppRoutes />
+                    <WalletConnectGlobal />
+                  </PhoneFrame>
+                </BrowserRouter>
+              </TooltipProvider>
+            </AppLockProvider>
+          </WalletConnectProvider>
         </WalletProvider>
       </LanguageProvider>
     </ThemeProvider>

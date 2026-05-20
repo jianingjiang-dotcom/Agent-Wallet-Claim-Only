@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import {
   Settings, Bot, Settings2, FileText,
-  Wallet, BookUser, Shield, ClipboardCheck, ChevronRight, KeyRound
+  Wallet, BookUser, Shield, ClipboardCheck, ChevronRight, KeyRound,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { AppLayout } from '@/components/layout/AppLayout';

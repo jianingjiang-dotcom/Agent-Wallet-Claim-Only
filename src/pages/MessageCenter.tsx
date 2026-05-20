@@ -4,11 +4,13 @@ import { Inbox, Eraser } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SwipeBack } from '@/components/SwipeBack';
 import { useWallet } from '@/contexts/WalletContext';
+import { useWalletConnect } from '@/contexts/WalletConnectContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MessageCard } from '@/components/notifications/MessageCard';
 import { TodoCard } from '@/components/notifications/TodoCard';
 import { EmptyState } from '@/components/EmptyState';
 import { cn } from '@/lib/utils';
+import { wcRequestToTodo } from '@/lib/wc-todo-bridge';
 
 type MainTab = 'messages' | 'todos';
 
@@ -16,10 +18,11 @@ export default function MessageCenter() {
   const navigate = useNavigate();
   const location = useLocation();
   const {
-    messages, todoItems,
+    messages, todoItems, wallets,
     unreadMessageCount, pendingTodoCount,
     markMessageAsRead, markAllMessagesAsRead,
   } = useWallet();
+  const { pendingRequests, getSessionById } = useWalletConnect();
 
   const stateTab = (location.state as { tab?: MainTab })?.tab;
   const savedTab = sessionStorage.getItem('mc-tab') as MainTab | null;
@@ -56,10 +59,20 @@ export default function MessageCenter() {
     return groups;
   }, [sortedMessages]);
 
+  // WalletConnect sign requests rendered as virtual todos (no state-machine merge,
+  // only display-layer aggregation).
+  const wcTodos = useMemo(() => {
+    return pendingRequests.map(req => {
+      const session = getSessionById(req.sessionId);
+      const wallet = session ? wallets.find(w => w.id === session.walletId) : undefined;
+      return wcRequestToTodo(req, session, wallet);
+    });
+  }, [pendingRequests, getSessionById, wallets]);
+
   // All todos sorted by createdAt, grouped by date
   const sortedTodos = useMemo(() => {
-    return [...todoItems].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }, [todoItems]);
+    return [...todoItems, ...wcTodos].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }, [todoItems, wcTodos]);
 
   const groupedTodos = useMemo(() => {
     const today = new Date();

@@ -1,5 +1,5 @@
 // QR Code Parser for Cryptocurrency Addresses
-// Supports multiple formats: plain address, EIP-681, JSON
+// Supports multiple formats: plain address, EIP-681, JSON, WalletConnect URI
 
 import { ChainId } from '@/types/wallet';
 
@@ -10,6 +10,9 @@ export interface ParsedQRData {
   memo?: string;
   isValid: boolean;
   error?: string;
+  /** Set when QR is a WalletConnect URI; the raw URI is in `wcUri` */
+  isWalletConnect?: boolean;
+  wcUri?: string;
 }
 
 // Address pattern detection
@@ -128,6 +131,16 @@ export function parseQRCode(data: string): ParsedQRData {
   }
 
   const trimmed = data.trim();
+
+  // WalletConnect URI: wc:<topic>@2?...
+  if (/^wc:[a-z0-9]+@2/i.test(trimmed)) {
+    return {
+      address: '',
+      isValid: true,
+      isWalletConnect: true,
+      wcUri: trimmed,
+    };
+  }
 
   // Try EIP-681 format first
   if (trimmed.match(/^(ethereum|tron|bnb):/i)) {

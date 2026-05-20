@@ -16,6 +16,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useWallet, aggregateByChain } from '@/contexts/WalletContext';
+import { useWalletConnect } from '@/contexts/WalletConnectContext';
+import { ConnectDappDrawer } from '@/components/ConnectDappDrawer';
+import { WalletConnectOnboardingDrawer } from '@/components/WalletConnectOnboardingDrawer';
+import { isOnboardingDone } from '@/lib/wc-storage';
 import { cn } from '@/lib/utils';
 import { ChainDropdown } from '@/components/ChainDropdown';
 import { CryptoIcon } from '@/components/CryptoIcon';
@@ -123,6 +127,18 @@ export default function HomePage() {
   const [showAllAssets, setShowAllAssets] = useState(false);
   const [isLoading] = useState(false);
   const [showSetupDialog, setShowSetupDialog] = useState(false);
+  const [connectDappOpen, setConnectDappOpen] = useState(false);
+  const [wcOnboardingOpen, setWcOnboardingOpen] = useState(false);
+  const { sessions: wcSessions, pendingRequests: wcPendingRequests } = useWalletConnect();
+  const wcPendingCount = wcPendingRequests.filter(r => r.status === 'pending').length;
+
+  const handleConnectDappTrigger = () => {
+    if (isOnboardingDone()) {
+      setConnectDappOpen(true);
+    } else {
+      setWcOnboardingOpen(true);
+    }
+  };
   const navigate = useNavigate();
   const location = useLocation();
   const handledSidebarOpen = useRef(false);
@@ -372,13 +388,13 @@ export default function HomePage() {
               transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             >
               <Bell className="w-6 h-6" strokeWidth={1.5} style={{ color: '#000000' }} />
-              {(unreadMessageCount + pendingTodoCount) > 0 && (
+              {(unreadMessageCount + pendingTodoCount + wcPendingCount) > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   className="absolute -top-[6px] -right-[6px] min-w-4 h-4 px-1 bg-destructive text-destructive-foreground text-[10px] font-medium rounded-full flex items-center justify-center"
                 >
-                  {(unreadMessageCount + pendingTodoCount) > 9 ? '9+' : (unreadMessageCount + pendingTodoCount)}
+                  {(unreadMessageCount + pendingTodoCount + wcPendingCount) > 9 ? '9+' : (unreadMessageCount + pendingTodoCount + wcPendingCount)}
                 </motion.span>
               )}
             </motion.button>
@@ -428,9 +444,9 @@ export default function HomePage() {
               </div>
 
               {/* Quick Actions — Apple style pill buttons */}
-              <div className="flex gap-3">
+              <div className="flex gap-2.5">
                 <Button
-                  className="flex-1 h-11 bg-primary text-primary-foreground rounded-xl text-[15px] font-semibold"
+                  className="flex-1 h-11 bg-primary text-primary-foreground rounded-xl text-[14px] font-semibold px-2"
                   onClick={() => {
                     if (needsSetup) {
                       setShowSetupDialog(true);
@@ -440,19 +456,32 @@ export default function HomePage() {
                   }}
                 >
                   {isAgentLinked(currentWallet) ? (
-                    <Bot className="w-4 h-4 mr-2" strokeWidth={1.5} />
+                    <Bot className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
                   ) : (
-                    <Send className="w-4 h-4 mr-2" strokeWidth={1.5} />
+                    <Send className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
                   )}
-                  {isAgentLinked(currentWallet) ? '请求Agent执行' : '转账'}
+                  {isAgentLinked(currentWallet) ? '请求 Agent' : '转账'}
                 </Button>
                 <Button
                   variant="secondary"
-                  className="flex-1 h-11 rounded-xl text-[15px] font-semibold"
+                  className="flex-1 h-11 rounded-xl text-[14px] font-semibold px-2"
                   onClick={() => navigate('/receive')}
                 >
-                  <QrCode className="w-4 h-4 mr-2" strokeWidth={1.5} />
+                  <QrCode className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
                   收款
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="flex-1 h-11 rounded-xl text-[14px] font-semibold px-2 relative"
+                  onClick={() => guard(() => handleConnectDappTrigger())}
+                >
+                  <Link2 className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
+                  连接
+                  {wcSessions.length > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-primary text-primary-foreground rounded-full text-[10px] font-bold flex items-center justify-center">
+                      {wcSessions.length}
+                    </span>
+                  )}
                 </Button>
               </div>
           </motion.div>
@@ -722,6 +751,16 @@ export default function HomePage() {
         onOpenChange={setDrawerOpen}
         walletName={currentWallet?.name}
         returnTo="/home"
+      />
+
+      {/* WalletConnect — connect entry (session approval is mounted globally in WalletConnectGlobal) */}
+      <ConnectDappDrawer open={connectDappOpen} onOpenChange={setConnectDappOpen} />
+
+      {/* WalletConnect — first-time onboarding (3 slides). After completion, opens ConnectDappDrawer. */}
+      <WalletConnectOnboardingDrawer
+        open={wcOnboardingOpen}
+        onOpenChange={setWcOnboardingOpen}
+        onComplete={() => setConnectDappOpen(true)}
       />
 
     </AppLayout>
